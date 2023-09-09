@@ -1,0 +1,67 @@
+version: '3.3'
+services:
+ 
+  #PHP Service
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: webdevops/php
+    container_name: glueapp
+    restart: unless-stopped
+    tty: true
+    environment:
+      SERVICE_NAME: app
+      SERVICE_TAGS: dev
+    working_dir: /var/www/html/
+    volumes:
+      - ./:/var/www/html/
+      - ./php/glueapp.ini:/usr/local/etc/php/conf.d/glueapp.ini
+    networks:
+      - app-network
+ 
+  #Nginx Service
+  webserver:
+    image: nginx:alpine
+    container_name: webserver
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "8880:8880"
+      - "4443:443"
+    volumes:
+      - ./:/var/www/html/
+      - ./nginx/conf.d/glueapp.conf:/etc/nginx/conf.d/glueapp.conf
+    networks:
+      - app-network
+ 
+  #MySQL Service
+  db:
+    image: mysql
+    container_name: dbserver
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "3309:3306"
+    expose:
+      - "3306"
+    environment:
+      MYSQL_DATABASE: glueapp
+      MYSQL_ROOT_PASSWORD: StrongTest@1
+      SERVICE_TAGS: dev
+      SERVICE_NAME: mysql
+    volumes:
+      - dbdata:/var/lib/mysql/
+ #      - ./mysql/gluedbserver.conf:/etc/mysql/gluedbserver.conf
+    networks:
+      - app-network
+ 
+#Docker Networks
+networks:
+  app-network:
+    driver: bridge
+#Volumes
+volumes:
+  dbdata:
+    driver: local
+    
